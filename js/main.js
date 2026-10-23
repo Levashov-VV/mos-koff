@@ -29,53 +29,165 @@
 		})
 	}
 
-	/* ---------- product cards: variant chips + thumbnails ---------- */
+	/* ---------- product cards: variant chips + thumbnails + swipe ---------- */
 	document.querySelectorAll('[data-gallery]').forEach(card => {
 		const variants = JSON.parse(card.dataset.gallery)
-		const stage = card.querySelector('.stage img')
+		const stage = card.querySelector('.stage')
+		const stageImg = stage?.querySelector('img')
 		const thumbs = card.querySelector('.thumbs')
 		const chips = card.querySelectorAll('.chip')
-		const name = card.querySelector('h3').textContent
-		let current = variants[0]
+		const title = card.querySelector('h3')?.textContent || 'Кофемашина'
 
-		const show = i => {
-			stage.src = current.images[i] + '.webp'
-			stage.alt = name + ', ' + current.label.toLowerCase()
-			thumbs
-				.querySelectorAll('.thumb')
-				.forEach((t, k) => t.classList.toggle('on', k === i))
+		if (!stage || !stageImg || !thumbs || !variants.length) return
+
+		let current = variants[0]
+		let currentIndex = 0
+		let startX = 0
+		let startY = 0
+		let pointerId = null
+
+		const imageCache = new Map()
+		let imageRequest = 0
+
+		const preloadImage = src => {
+			const img = new Image()
+			img.decoding = 'async'
+			img.src = src
+			return img
 		}
-		const renderThumbs = () => {
-			thumbs.innerHTML = ''
-			if (current.images.length < 2) return
-			current.images.forEach((p, i) => {
-				const b = document.createElement('button')
-				b.type = 'button'
-				b.className = 'thumb' + (i === 0 ? ' on' : '')
-				b.setAttribute('aria-label', 'Фото ' + (i + 1))
-				b.innerHTML =
-					'<img src="' +
-					p +
-					'-t.webp" alt="" width="120" height="90" loading="lazy">'
-				b.addEventListener('click', () => show(i))
-				thumbs.appendChild(b)
+
+		// Заранее загружаем первые фото каждого варианта
+		variants.forEach(variant => {
+			const path = variant.images?.[0]
+			if (!path) return
+
+			const src = path + '.webp'
+			if (imageCache.has(src)) return
+
+			const img = new Image()
+			img.decoding = 'async'
+			img.src = src
+
+			imageCache.set(src, img)
+		})
+
+		const show = async index => {
+			if (!current.images.length) return
+
+			const selectedIndex =
+				(index + current.images.length) % current.images.length
+
+			const src = current.images[selectedIndex] + '.webp'
+			const request = ++imageRequest
+			const selectedVariant = current
+
+			let img = imageCache.get(src)
+
+			if (!img) {
+				img = preloadImage(src)
+				imageCache.set(src, img)
+			}
+
+			try {
+				await img.decode()
+			} catch {
+				return
+			}
+
+			// Не показываем устаревшее фото
+			if (request !== imageRequest || selectedVariant !== current) return
+
+			stageImg.src = src
+			stageImg.alt = title + ', ' + selectedVariant.label.toLowerCase()
+			currentIndex = selectedIndex
+
+			thumbs.querySelectorAll('.thumb').forEach((thumb, i) => {
+				const active = i === currentIndex
+				thumb.classList.toggle('on', active)
+				thumb.setAttribute('aria-current', String(active))
 			})
 		}
-		thumbs
-			.querySelectorAll('.thumb')
-			.forEach((b, i) => b.addEventListener('click', () => show(i)))
-		chips.forEach(chip =>
+
+		const renderThumbs = () => {
+			thumbs.replaceChildren()
+
+			if (current.images.length < 2) return
+
+			current.images.forEach((path, index) => {
+				const button = document.createElement('button')
+				button.type = 'button'
+				button.className = 'thumb'
+				button.setAttribute('aria-label', 'Фото ' + (index + 1))
+
+				const image = document.createElement('img')
+				image.src = path + '-t.webp'
+				image.alt = ''
+				image.width = 120
+				image.height = 90
+				image.loading = 'lazy'
+
+				button.appendChild(image)
+				button.addEventListener('click', () => show(index))
+				thumbs.appendChild(button)
+			})
+		}
+
+		stage.style.touchAction = 'pan-y pinch-zoom'
+
+		stage.addEventListener('pointerdown', event => {
+			if (event.pointerType === 'mouse' && event.button !== 0) return
+
+			startX = event.clientX
+			startY = event.clientY
+			pointerId = event.pointerId
+		})
+
+		stage.addEventListener('pointerup', event => {
+			if (pointerId !== event.pointerId) return
+
+			const deltaX = event.clientX - startX
+			const deltaY = event.clientY - startY
+
+			startX = 0
+			startY = 0
+			pointerId = null
+
+			if (Math.abs(deltaX) < 45 || Math.abs(deltaX) < Math.abs(deltaY) * 1.2)
+				return
+
+			show(currentIndex + (deltaX < 0 ? 1 : -1))
+		})
+
+		const resetPointer = () => {
+			startX = 0
+			startY = 0
+			pointerId = null
+		}
+
+		stage.addEventListener('pointercancel', resetPointer)
+		stage.addEventListener('lostpointercapture', resetPointer)
+
+		chips.forEach(chip => {
 			chip.addEventListener('click', () => {
-				current = variants.find(v => v.key === chip.dataset.key)
-				chips.forEach(c => {
-					const on = c === chip
-					c.classList.toggle('on', on)
-					c.setAttribute('aria-pressed', String(on))
+				const variant = variants.find(item => item.key === chip.dataset.key)
+
+				if (!variant) return
+
+				current = variant
+
+				chips.forEach(item => {
+					const active = item === chip
+					item.classList.toggle('on', active)
+					item.setAttribute('aria-pressed', String(active))
 				})
+
 				renderThumbs()
 				show(0)
-			}),
-		)
+			})
+		})
+
+		renderThumbs()
+		show(0)
 	})
 
 	/* ---------- "Уточнить условия" pre-fills the form ---------- */
@@ -89,44 +201,103 @@
 	)
 
 	/* ---------- lightbox ---------- */
+
 	const box = document.getElementById('lightbox')
 	const big = document.getElementById('lbimg')
 	const items = [...document.querySelectorAll('.galleryitem')]
 
 	if (box && big && items.length > 0) {
 		let idx = 0
+		let touchStartX = 0
+		let touchStartY = 0
+
+		let slideTimer
 
 		const open = i => {
 			idx = (i + items.length) % items.length
+			big.classList.remove('lb-slide-out-left', 'lb-slide-out-right')
 			big.src = items[idx].dataset.full
 			big.alt = items[idx].dataset.alt || ''
 
 			if (!box.open) box.showModal()
 		}
 
-		items.forEach((it, i) => {
-			it.addEventListener('click', () => open(i))
+		const slide = direction => {
+			if (slideTimer) clearTimeout(slideTimer)
+
+			big.classList.remove('lb-slide-out-left', 'lb-slide-out-right')
+			big.classList.add(
+				direction === 1 ? 'lb-slide-out-left' : 'lb-slide-out-right',
+			)
+
+			slideTimer = setTimeout(() => {
+				idx = (idx + direction + items.length) % items.length
+				big.src = items[idx].dataset.full
+				big.alt = items[idx].dataset.alt || ''
+
+				big.classList.remove('lb-slide-out-left', 'lb-slide-out-right')
+				slideTimer = null
+			}, 260)
+		}
+
+		items.forEach((item, i) => {
+			item.addEventListener('click', () => open(i))
 		})
 
-		document
-			.getElementById('lbprev')
-			?.addEventListener('click', () => open(idx - 1))
-		document
-			.getElementById('lbnext')
-			?.addEventListener('click', () => open(idx + 1))
-		document
-			.getElementById('lbclose')
-			?.addEventListener('click', () => box.close())
+		document.getElementById('lbprev')?.addEventListener('click', () => {
+			slide(-1)
+		})
+
+		document.getElementById('lbnext')?.addEventListener('click', () => {
+			slide(1)
+		})
+
+		document.getElementById('lbclose')?.addEventListener('click', () => {
+			box.close()
+		})
 
 		box.addEventListener('click', e => {
 			if (e.target === box) box.close()
 		})
 
-		box.addEventListener('close', () => big.removeAttribute('src'))
+		big.addEventListener(
+			'touchstart',
+			e => {
+				if (e.touches.length !== 1) return
+
+				touchStartX = e.touches[0].clientX
+				touchStartY = e.touches[0].clientY
+			},
+			{ passive: true },
+		)
+
+		big.addEventListener(
+			'touchend',
+			e => {
+				if (e.changedTouches.length !== 1) return
+
+				const deltaX = e.changedTouches[0].clientX - touchStartX
+				const deltaY = e.changedTouches[0].clientY - touchStartY
+
+				if (
+					Math.abs(deltaX) < 50 ||
+					Math.abs(deltaX) < Math.abs(deltaY) * 1.2
+				) {
+					return
+				}
+
+				slide(deltaX < 0 ? 1 : -1)
+			},
+			{ passive: true },
+		)
+
+		box.addEventListener('close', () => {
+			big.removeAttribute('src')
+		})
 
 		box.addEventListener('keydown', e => {
-			if (e.key === 'ArrowLeft') open(idx - 1)
-			if (e.key === 'ArrowRight') open(idx + 1)
+			if (e.key === 'ArrowLeft') slide(-1)
+			if (e.key === 'ArrowRight') slide(1)
 		})
 	}
 

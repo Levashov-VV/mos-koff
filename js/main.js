@@ -9,6 +9,8 @@
 	if (menu && toggle) {
 		const setMenu = open => {
 			menu.classList.toggle('open', open)
+			document.body.classList.toggle('menu-open', open)
+
 			toggle.setAttribute('aria-expanded', String(open))
 			toggle.setAttribute('aria-label', open ? 'Закрыть меню' : 'Открыть меню')
 		}
@@ -16,6 +18,7 @@
 		closeButton?.addEventListener('click', () => {
 			setMenu(false)
 		})
+
 		toggle.addEventListener('click', () => {
 			setMenu(!menu.classList.contains('open'))
 		})

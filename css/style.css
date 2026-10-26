@@ -1207,7 +1207,7 @@ h1 em {
 }
 
 .mobilecta {
-	display: none;
+	display: none !important;
 }
 
 /* ========================================
@@ -1764,7 +1764,7 @@ h1 em {
 
 @media (min-width: 761px) and (max-width: 1024px) {
 	.mobilecta {
-		display: none !important;
+		display: none;
 	}
 }
 
@@ -2172,6 +2172,10 @@ h1 em {
 	.call-btn--header svg {
 		width: 16px;
 		height: 16px;
+	}
+
+	.mobilecta {
+		display: flex !important;
 	}
 }
 

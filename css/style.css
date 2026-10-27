@@ -657,6 +657,33 @@ h1 em {
 	border-radius: 20px;
 	padding: 16px;
 	overflow: hidden;
+	transition:
+		transform 250ms ease,
+		box-shadow 250ms ease,
+		border-color 200ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.extra:hover {
+		transform: translateY(-5px);
+		box-shadow: 0 14px 32px rgb(40 36 31 / 9%);
+		border-color: #c9b29c;
+	}
+
+	.extra img {
+		transition: transform 400ms ease;
+	}
+
+	.extra:hover img {
+		transform: scale(1.025);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.extra,
+	.extra img {
+		transition: none;
+	}
 }
 .extra img {
 	width: 100%;
@@ -665,6 +692,102 @@ h1 em {
 	object-fit: cover;
 	border-radius: 14px;
 	display: block;
+}
+
+/* Цена товара */
+.product-price {
+	margin: 10px 0 14px;
+	color: var(--deep, #503622);
+	font-size: 25px;
+	font-weight: 700;
+	line-height: 1.2;
+	letter-spacing: -0.5px;
+}
+
+.product-price small {
+	display: block;
+	margin-top: 5px;
+	color: #817366;
+	font-size: 12px;
+	font-weight: 400;
+	letter-spacing: 0;
+}
+
+.extra-prices {
+	display: grid;
+	gap: 12px;
+	margin: 18px 0;
+}
+
+/* Анимация вариантов кофе Baena */
+.extra-price {
+	padding: 4px 8px;
+	position: relative;
+	border: 1px solid #e5d9ce;
+	border-radius: 12px;
+	transition:
+		background-color 0.25s ease,
+		border-color 0.25s ease,
+		box-shadow 0.25s ease,
+		transform 0.25s ease;
+}
+
+.extra-price__value {
+	padding-left: 4px;
+	transform-origin: center;
+	transition:
+		color 0.25s ease,
+		transform 0.25s ease;
+}
+
+/* Название и цена */
+.extra-price__name,
+.extra-price__value {
+	transition:
+		color 0.25s ease,
+		transform 0.25s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.extra-price:hover {
+		background-color: #f7f0e8;
+		border-color: #d9c2ad;
+		box-shadow: 0 5px 14px rgb(80 54 34 / 10%);
+		transform: translateY(-3px);
+	}
+
+	.extra-price:hover .extra-price__value {
+		color: #78543b;
+		transform: scale(1.06);
+	}
+}
+
+.extra-price:focus-within {
+	background-color: #f7f0e8;
+	border-color: #78543b;
+}
+
+/* Уважение к настройке уменьшения анимации */
+@media (prefers-reduced-motion: reduce) {
+	.extra-price,
+	.extra-price__name,
+	.extra-price__value {
+		transition: none;
+	}
+}
+
+.extra-price__name small {
+	display: block;
+	color: #817366;
+	font-size: 12px;
+}
+
+.extra-price__value {
+	flex-shrink: 0;
+	color: var(--deep, #503622);
+	font-size: 17px;
+	font-weight: 700;
+	white-space: nowrap;
 }
 
 /* steps */
@@ -925,6 +1048,36 @@ h1 em {
 #contacts .contactline a:hover {
 	text-decoration: underline;
 	text-underline-offset: 3px;
+}
+#contacts .callback--moskoff .form-p {
+	margin: 0;
+	padding: 2px 0 0;
+}
+
+#contacts .callback--moskoff .form-p p {
+	margin: 0;
+	color: #766b60;
+	font-size: 11px;
+	font-weight: 400;
+	line-height: 1.65;
+}
+
+#contacts .callback--moskoff .form-p a {
+	color: #68472f;
+	text-decoration: underline;
+	text-decoration-thickness: 1px;
+	text-underline-offset: 3px;
+	transition: color 200ms ease;
+}
+
+#contacts .callback--moskoff .form-p a:hover {
+	color: #392719;
+}
+
+#contacts .callback--moskoff .form-p a:focus-visible {
+	outline: 2px solid #896344;
+	outline-offset: 3px;
+	border-radius: 2px;
 }
 
 .footer {
@@ -1208,6 +1361,15 @@ h1 em {
 
 .mobilecta {
 	display: none !important;
+}
+
+/* Естественное расположение содержимого карточек */
+.productbody {
+	align-items: flex-start;
+}
+
+.productbody > .btn {
+	margin-top: 4px;
 }
 
 /* ========================================
@@ -1762,12 +1924,6 @@ h1 em {
 	}
 }
 
-@media (min-width: 761px) and (max-width: 1024px) {
-	.mobilecta {
-		display: none;
-	}
-}
-
 /* ---------- 3. Телефоны: до 760px ---------- */
 @media (max-width: 760px) {
 	html,
@@ -2054,15 +2210,6 @@ h1 em {
 	}
 }
 
-.mobilecta {
-	display: flex;
-	position: fixed;
-	z-index: 9;
-	right: 10px;
-	bottom: 10px;
-	left: 10px;
-}
-
 .mobilecta .btn {
 	width: 100%;
 	box-shadow: 0 8px 28px #50362244;
@@ -2132,50 +2279,93 @@ h1 em {
 		font-size: 16px;
 	}
 
-	.extra {
-		grid-template-columns: 90px minmax(0, 1fr);
-		gap: 12px;
+	.extras .extra {
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		overflow: hidden;
 	}
 
-	.steps li {
-		padding: 18px;
+	.extras .extra > img {
+		display: block;
+		width: 100%;
+		max-width: none;
+		height: auto;
+		aspect-ratio: 16 / 9;
+		object-fit: cover;
+		object-position: center;
+		border-radius: 0;
 	}
 
-	.gallerygrid {
-		grid-auto-rows: 120px;
-	}
-
-	.contact {
-		padding: 22px 16px;
-	}
-
-	.form {
-		padding: 17px;
-	}
-
-	.lb-nav {
-		width: 34px;
-		height: 34px;
-		font-size: 24px;
-	}
-	.call-btn--header {
-		width: 32px;
-		min-width: 32px;
-		max-width: 32px;
-		height: 32px;
-		flex: 0 0 32px;
-		padding: 0;
-		border-radius: 50%;
+	.extras .extra > div {
+		width: 100%;
 		box-sizing: border-box;
 	}
+}
 
-	.call-btn--header svg {
-		width: 16px;
-		height: 16px;
-	}
+.extra-price {
+	align-items: flex-start;
+}
 
+.extra-price__value {
+	font-size: 15px;
+}
+
+.steps li {
+	padding: 18px;
+}
+
+.gallerygrid {
+	grid-auto-rows: 120px;
+}
+
+.contact {
+	padding: 22px 16px;
+}
+
+.form {
+	padding: 17px;
+}
+
+.lb-nav {
+	width: 34px;
+	height: 34px;
+	font-size: 24px;
+}
+.call-btn--header {
+	width: 32px;
+	min-width: 32px;
+	max-width: 32px;
+	height: 32px;
+	flex: 0 0 32px;
+	padding: 0;
+	border-radius: 50%;
+	box-sizing: border-box;
+}
+
+.call-btn--header svg {
+	width: 16px;
+	height: 16px;
+}
+
+.mobilecta {
+	display: none !important;
+}
+
+/* Показываем только при ширине экрана до 760px */
+@media screen and (max-width: 760px) {
 	.mobilecta {
 		display: flex !important;
+		position: fixed;
+		z-index: 999;
+		right: 10px;
+		bottom: 10px;
+		left: 10px;
+	}
+
+	.mobilecta .btn {
+		width: 100%;
+		box-shadow: 0 8px 28px #50362244;
 	}
 }
 
